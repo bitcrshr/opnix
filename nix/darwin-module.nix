@@ -41,7 +41,7 @@ in
 
     outputDir = lib.mkOption {
       type = lib.types.str;
-      default = pkgs.stdenv.isDarwin then "/usr/local/var/opnix/secrets" else "/var/lib/opnix/secrets";
+      default = "/usr/local/var/opnix/secrets";
       description = "Directory to store retrieved secrets";
     };
 
@@ -52,29 +52,43 @@ in
       description = "Users that should have access to the 1Password token through group membership";
       example = [ "alice" "bob" ];
     };
-  };
 
-  config = lib.mkIf cfg.enable {
-    # Create the opnix group
-    users.groups.${opnixGroup} = {
-      members = cfg.users;
-      gid = 555; # not ideal, should probably be passed in
+    # nix-darwin will not assign a default gid
+    opnixGid = lib.mkOption {
+      type = lib.types.ints.between 500 1000;
+      default = 600;
+      description = "An unused group id to assign to the Opnix group. You can see existing groups by running `dscl . list /Groups PrimaryGroupID | tr -s ' ' | sort -n -t ' ' -k2,2`.";
+      example = 555;
     };
 
-    users.users = builtins.listToAttrs(map (username: {
-      name = username;
-      value = {
-        packages = [
-          pkgsWithOverlay.opnix
-        ];
+    config = lib.mkIf cfg.enable {
+      # Let nix-darwin know it's allowed to mess with this group
+      users.knownGroups = [ opnixGroup ];
+
+      # Create the opnix group
+      users.groups.${opnixGroup} = {
+        members = cfg.users;
+        gid = cfg.opnixGid;
       };
-    }) cfg.users);
 
-    users.knownGroups = [ opnixGroup ];
+      # Add the opnix binary to the users environment
+      users.users = builtins.listToAttrs (map
+        (username: {
+          name = username;
+          value = {
+            packages = [
+              pkgsWithOverlay.opnix
+            ];
+          };
+        })
+        cfg.users);
 
-    system.activationScripts.onepassword-secrets = {
-      deps = [ ];
-      text = ''
+
+      # nix-darwin doesn't support arbitrary activation script names,
+      # so have to use a specific one.
+      #
+      # See source for details: https://github.com/nix-darwin/nix-darwin/blob/2f140d6ac8840c6089163fb43ba95220c230f22b/modules/system/activation-scripts.nix#L118 
+      system.activationScripts.extraActivation.text = ''
         # Ensure output directory exists with correct permissions
         mkdir -p ${cfg.outputDir}
         chmod 750 ${cfg.outputDir}

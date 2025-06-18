@@ -58,6 +58,7 @@ in
     # Create the opnix group
     users.groups.${opnixGroup} = {
       members = cfg.users;
+      gid = 555; # not ideal, should probably be passed in
     };
 
     users.knownGroups = [ opnixGroup ];

@@ -41,7 +41,7 @@ in
 
     outputDir = lib.mkOption {
       type = lib.types.str;
-      default = "/var/lib/opnix/secrets";
+      default = pkgs.stdenv.isDarwin then "/usr/local/var/opnix/secrets" else "/var/lib/opnix/secrets";
       description = "Directory to store retrieved secrets";
     };
 

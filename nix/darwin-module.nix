@@ -68,7 +68,7 @@ in
           pkgsWithOverlay.opnix
         ];
       };
-    }) usernames );
+    }) cfg.users);
 
     users.knownGroups = [ opnixGroup ];
 

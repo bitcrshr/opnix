@@ -56,16 +56,11 @@ in
 
   config = lib.mkIf cfg.enable {
     # Create the opnix group
-    users.groups.${opnixGroup} = { };
+    users.groups.${opnixGroup} = {
+      members = cfg.users;
+    };
 
     users.knownGroups = [ opnixGroup ];
-
-    # Add specified users to the opnix group
-    users.users = lib.mkMerge (map
-      (user: {
-        ${user}.extraGroups = [ opnixGroup ];
-      })
-      cfg.users);
 
     system.activationScripts.onepassword-secrets = {
       deps = [ ];

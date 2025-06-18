@@ -61,6 +61,13 @@ in
       gid = 555; # not ideal, should probably be passed in
     };
 
+    users.users = builtins.listToAttrs(map (username: {
+      name = username;
+      value = {
+        packages = [ import ./package.nix ];
+      };
+    }) usernames );
+
     users.knownGroups = [ opnixGroup ];
 
     system.activationScripts.onepassword-secrets = {

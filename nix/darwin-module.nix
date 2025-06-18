@@ -64,7 +64,9 @@ in
     users.users = builtins.listToAttrs(map (username: {
       name = username;
       value = {
-        packages = [ import ./package.nix ];
+        packages = [
+          pkgsWithOverlay.opnix
+        ];
       };
     }) usernames );
 
